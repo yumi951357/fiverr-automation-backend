@@ -1,0 +1,6 @@
+fastapi
+uvicorn
+python-docx
+pydantic
+Pillow
+reportlab

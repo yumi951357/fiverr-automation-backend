@@ -1,0 +1,16 @@
+services:
+  generation:
+    build: ./services/generation
+    ports: ["8001:8001"]
+    env_file: [.env]
+    volumes: ["./logs:/app/logs", "./storage:/app/storage"]
+  execution:
+    build: ./services/execution
+    ports: ["8002:8002"]
+    env_file: [.env]
+    volumes: ["./logs:/app/logs", "./storage:/app/storage"]
+  analytics:
+    build: ./services/analytics
+    ports: ["8003:8003"]
+    env_file: [.env]
+    volumes: ["./logs:/app/logs", "./storage:/app/storage"]
