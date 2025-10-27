@@ -2,6 +2,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import uvicorn
+from fastapi.responses import JSONResponse
 
 # ---------- 数据模型 ----------
 class GenerationRequest(BaseModel):
@@ -33,13 +34,30 @@ async def health_check():
 
 # ---------- 主接口：/neural/generator ----------
 @app.post("/neural/generator")
-async def neural_generator(request: GenerationRequest):
+async def neural_generator(request: Request):
     try:
-        # 模拟生成逻辑，可以改为你真实的 AI 生成函数
-        response_text = f"✨ Generated output for prompt: {request.prompt}"
-        return {"status": "success", "message": "Digital employees activated.", "result": response_text}
-    except Exception as e:
-        return {"status": "error", "message": str(e)}
+        data = await request.json()
+    except:
+        data = {}
+    return {"employee": "Prometheus", "task": "Idea Generation", "input": data, "output": "Initial content draft created."}
+
+# ---------- 主接口：/neural/refiner ----------
+@app.post("/neural/refiner")
+async def neural_refiner(request: Request):
+    try:
+        data = await request.json()
+    except:
+        data = {}
+    return {"employee": "Mnemosyne", "task": "Content Refinement", "input": data, "output": "Refined content with optimized phrasing."}
+
+# ---------- 主接口：/neural/verifier ----------
+@app.post("/neural/verifier")
+async def neural_verifier(request: Request):
+    try:
+        data = await request.json()
+    except:
+        data = {}
+    return {"employee": "Hermes", "task": "Final Delivery Verification", "input": data, "output": "Delivery package verified and ready."}
 
 # ---------- 异常捕获 ----------
 @app.middleware("http")
