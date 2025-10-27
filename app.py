@@ -1,4 +1,6 @@
 from flask import Flask, jsonify, request
+import os
+
 app = Flask(__name__)
 
 @app.route('/')
@@ -11,4 +13,5 @@ def tasks():
     return jsonify({'task': data.get('type'), 'payload': data.get('payload', {})})
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=4000)
+    port = int(os.environ.get('PORT', 4000))
+    app.run(host='0.0.0.0', port=port)
