@@ -37,7 +37,7 @@ async def neural_generator(request: GenerationRequest):
     try:
         # 模拟生成逻辑，可以改为你真实的 AI 生成函数
         response_text = f"✨ Generated output for prompt: {request.prompt}"
-        return {"status": "success", "result": response_text}
+        return {"status": "success", "message": "Digital employees activated.", "result": response_text}
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
