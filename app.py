@@ -38,4 +38,3 @@ async def neural_refiner(request: GenerationRequest):
 async def neural_verifier(request: GenerationRequest):
     response_text = f"Verified: {request.prompt}"
     return {"status": "success", "output": response_text}
-EOF
