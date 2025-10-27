@@ -1,8 +1,18 @@
 from flask import Flask, jsonify, request
+from flask_cors import CORS  # 添加 CORS 支持
 import os
 import datetime
 
 app = Flask(__name__)
+
+# 添加 CORS 支持，允许所有前端域名
+CORS(app, origins=[
+    "https://frontend-qes3y9hm4-yumi951357s-projects.vercel.app",
+    "https://frontend-nib8wfau8-yumi951357s-projects.vercel.app", 
+    "https://frontend-pmxc6gltj-yumi951357s-projects.vercel.app",
+    "http://localhost:3000",
+    "http://127.0.0.1:3000"
+])
 
 @app.route('/')
 def index():
