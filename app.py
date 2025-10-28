@@ -1,4 +1,3 @@
-
 from fastapi import FastAPI, Header, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -15,6 +14,7 @@ app.add_middleware(
         "https://fiverr-automation-frontend.vercel.app",
         "*",  # （测试阶段开放，稳定后可以只留前端域名）
     ],
+    allow_credentials=True,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -93,6 +93,18 @@ Next Steps:
 
 @app.post("/neural/generator")
 async def generator(data: NeuralInput, x_api_key: str = Header(None)):
+    if x_api_key != API_KEY:
+        raise HTTPException(status_code=403, detail="Forbidden: invalid API key")
+    return {"output": generate_plan(data.prompt)}
+
+@app.post("/neural/refiner")
+async def refiner(data: NeuralInput, x_api_key: str = Header(None)):
+    if x_api_key != API_KEY:
+        raise HTTPException(status_code=403, detail="Forbidden: invalid API key")
+    return {"output": generate_plan(data.prompt)}
+
+@app.post("/neural/verifier")
+async def verifier(data: NeuralInput, x_api_key: str = Header(None)):
     if x_api_key != API_KEY:
         raise HTTPException(status_code=403, detail="Forbidden: invalid API key")
     return {"output": generate_plan(data.prompt)}
