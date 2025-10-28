@@ -62,10 +62,6 @@ def build_plan(user_prompt: str | None) -> str:
         return BP_PLAN.format(title=title, date=date)
     return OP_PLAN.format(date=date, req=req)
 
-@app.get("/")
-async def root():
-    return {"message": "Fiverr Automation Backend is running", "status": "healthy"}
-
 @app.post("/api/plan")
 async def api_plan(body: PlanReq):
     return {"output": build_plan(body.prompt)}
