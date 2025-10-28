@@ -15,7 +15,6 @@ app.add_middleware(
         "*",  # （测试阶段开放，稳定后可以只留前端域名）
     ],
     allow_credentials=True,
-    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
