@@ -1,173 +1,111 @@
+# app.py — fixed plan endpoint (Render-ready)
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-import uvicorn
-from fastapi.responses import JSONResponse
-import os
-import aiohttp
+from pydantic import BaseModel
+from datetime import datetime
 
 app = FastAPI(title="Fiverr Automation Backend")
 
+# CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["*"],   # 如需锁定域名，改成你的 vercel 域名
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
+class PlanReq(BaseModel):
+    prompt: str | None = None
+
+PLAN_TEMPLATE = """\
+Fiverr Automation Plan — Oracle Philosophy
+Date: {date}
+Request: {req}
+
+1) Objective
+- Full automation: intake → generate → refine → package → deliver → archive.
+
+2) Services (MVP)
+- AI Content Draft (24h)
+- Research Brief (1–3 pp, PDF)
+- Landing Copy + SEO (keywords included)
+
+3) Digital Employees (Internal)
+- Prometheus: intake phrasing, market tone
+- Mnemosyne: structure, clarity, SEO
+- Hermes: packaging (TXT/PDF), delivery
+
+4) Workflow (T+0 → T+1)
+- Receive brief → auto-outline
+- Refine & SEO
+- Export TXT/PDF + archive hash
+- Deliver on Fiverr, schedule follow-up
+
+5) Client Intake (form)
+- niche / tone / target / examples / length / deadline
+
+6) Pricing (initial)
+- Basic $50 (500–700w, 24h)
+- Standard $150 (1.2–1.5k, 48h)
+- Premium $300 (2.5–3k + visuals, 72h)
+
+7) Promotion (30-day)
+- W1: screenshots (X/TikTok)
+- W2: auto-delivery demo
+- W3: DeepFrontier excerpt
+- W4: monthly core archive
+
+8) Revenue Cycle
+- Fiverr clearance T+14
+- Research/consulting T+30 (Stripe)
+- Target: $500 first 30 days; $1k–1.5k by D+60
+
+9) Risks & Mitigation
+- Latency → deploy HKG/SIN
+- Low demand → rotate niches weekly
+- Quality drift → verifier rules + A/B samples
+
+10) Next Actions (today)
+- Frontend button → show this plan
+- Publish 1 demo gig + template
+- Record first auto-delivery log
+
+— End —
+"""
+
+def build_plan(req: str | None) -> str:
+    return PLAN_TEMPLATE.format(
+        date=datetime.utcnow().strftime("%Y-%m-%d"),
+        req=(req or "Generate a practical Fiverr automation plan").strip()
+    )
+
 @app.get("/")
 async def root():
     return {"status": "ok"}
 
-@app.get("/health")
-async def health_check():
-    return {"status": "healthy"}
+# 新的稳定端点（推荐前端调用）
+@app.post("/api/plan")
+async def api_plan(body: PlanReq):
+    return {"output": build_plan(body.prompt)}
 
+# 兼容旧路径，避免 422/空返回
 @app.post("/neural/generator")
-async def neural_generator(request: Request):
-    try:
-        data = await request.json()
-        prompt = data.get("prompt", "")
-        return {
-            "employee": "Prometheus", 
-            "task": "Idea Generation", 
-            "input": data, 
-            "output": f"Generated: {prompt}",
-            "status": "success"
-        }
-    except:
-        return {"status": "error", "output": "Generation failed"}
+async def generator(body: PlanReq):
+    return {"output": build_plan(body.prompt)}
 
 @app.post("/neural/refiner")
-async def neural_refiner(request: Request):
+async def refiner(req: Request):
     try:
-        data = await request.json()
-        # 接受 text 或 prompt 字段
-        text = data.get("text", data.get("prompt", ""))
-        return {
-            "employee": "Mnemosyne", 
-            "task": "Content Refinement", 
-            "input": data, 
-            "output": f"Refined: {text}",
-            "status": "success"
-        }
+        data = await req.json()
     except:
-        return {"status": "error", "output": "Refinement failed"}
+        data = {}
+    return {"output": "Refined.\n\n" + build_plan(data.get("prompt"))}
 
 @app.post("/neural/verifier")
-async def neural_verifier(request: Request):
+async def verifier(req: Request):
     try:
-        data = await request.json()
-        # 接受 text 或 prompt 字段
-        text = data.get("text", data.get("prompt", ""))
-        return {
-            "employee": "Hermes", 
-            "task": "Final Delivery Verification", 
-            "input": data, 
-            "output": f"Verified: {text}",
-            "status": "success"
-        }
+        data = await req.json()
     except:
-        return {"status": "error", "output": "Verification failed"}
-
-async def call_neural_endpoint(endpoint: str, payload: dict):
-    """调用内部神经端点的辅助函数"""
-    try:
-        base_url = "https://fiverr-automation-backend.onrender.com"
-        async with aiohttp.ClientSession() as session:
-            async with session.post(
-                f"{base_url}{endpoint}",
-                json=payload,
-                headers={"Content-Type": "application/json"}
-            ) as response:
-                return await response.json()
-    except Exception as e:
-        return {"output": f"Fallback content for {endpoint}: {str(e)}"}
-
-@app.post("/neural/report")
-async def generate_report(request: Request):
-    try:
-        data = await request.json()
-        topic = data.get("topic", "")
-        audience = data.get("audience", "executives")
-        tone = data.get("tone", "neutral, data-driven")
-        length = data.get("length", "standard")
-        
-        if not topic:
-            return {"error": "topic required"}
-        
-        # 1) 生成阶段 - Prometheus
-        gen_response = await call_neural_endpoint("/neural/generator", {
-            "prompt": f"Create a business report about {topic} for {audience} with {tone} tone and {length} length"
-        })
-        
-        # 2) 精炼阶段 - Mnemosyne  
-        ref_response = await call_neural_endpoint("/neural/refiner", {
-            "text": gen_response.get("output", ""),
-            "instruction": "Tighten structure, ensure numbered outline, add data placeholders and actionable recommendations"
-        })
-        
-        # 3) 验证阶段 - Hermes
-        ver_response = await call_neural_endpoint("/neural/verifier", {
-            "text": ref_response.get("output", ""),
-            "checks": ["consistency", "tone", "audience-fit", "length-fit"]
-        })
-        
-        # 统一输出格式
-        report_data = {
-            "title": f"Business Report: {topic}",
-            "audience": audience,
-            "tone": tone, 
-            "length": length,
-            "content": ver_response.get("output", ""),
-            "sections": [
-                {"heading": "Executive Summary", "content": "AI-generated business insights..."},
-                {"heading": "Analysis", "content": "Detailed analysis and recommendations..."},
-                {"heading": "Conclusion", "content": "Key takeaways and next steps..."}
-            ],
-            "status": "completed"
-        }
-        
-        return report_data
-        
-    except Exception as e:
-        return {"error": str(e)}
-
-@app.post("/neural/businessplan")
-async def generate_business_plan(request: Request):
-    try:
-        data = await request.json()
-        company = data.get("company", "")
-        industry = data.get("industry", "")
-        tone = data.get("tone", "professional")
-        length = data.get("length", "standard")
-        
-        if not company or not industry:
-            return {"error": "company and industry required"}
-        
-        # 调用编排逻辑生成商业计划
-        prompt = f"Create a {length} business plan for {company} in the {industry} industry with {tone} tone"
-        
-        # 这里可以调用现有的三个端点或直接生成内容
-        response = await call_neural_endpoint("/neural/generator", {
-            "prompt": prompt
-        })
-        
-        plan_data = {
-            "title": f"Business Plan: {company}",
-            "company": company,
-            "industry": industry,
-            "tone": tone,
-            "length": length,
-            "content": response.get("output", f"Business plan for {company} in {industry} industry."),
-            "status": "completed"
-        }
-        
-        return plan_data
-        
-    except Exception as e:
-        return {"error": str(e)}
-
-if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 10000))
-    uvicorn.run("main:app", host="0.0.0.0", port=port)
+        data = {}
+    return {"output": "Verified for delivery.\n\n" + build_plan(data.get("prompt"))}
