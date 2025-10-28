@@ -3,94 +3,78 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from datetime import datetime
 
-app = FastAPI(title="Fiverr Automation Backend — Neural Store")
+app = FastAPI(title="Fiverr Automation Backend")
 
-# ====== CORS Fix ======
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "https://frontend-qes3y9hm4-yumi951357s-projects.vercel.app",
-        "https://vercel.app",
-        "*"
+        "https://vercel.app"
     ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# ====== Model ======
-class NeuralInput(BaseModel):
+class PlanReq(BaseModel):
     prompt: str | None = None
 
-
-# ====== Core Logic ======
-def generate_plan(prompt: str | None) -> str:
-    text = (prompt or "").lower().strip()
-    date = datetime.utcnow().strftime("%Y-%m-%d")
-
-    if "business" in text:
-        return f"""
-AI Social Media Management — Business Plan
-Date: {date}
-
-1. Executive Summary
-Mission: Automate content creation and analytics for SMEs via AI.
-2. Market Analysis
-Global TAM $17B by 2030, growth 14%.
-3. Product
-Pipeline: Intake → Generator → Refiner → Scheduler → Analytics.
-4. Business Model
-Freemium SaaS + Fiverr consulting.
-5. Financials
-Startup cost $1.5k, break-even M3, ROI 230% M6.
-6. Roadmap
-M1 MVP, M2 Dashboard, M3 Growth & Ads.
-— End of Business Plan —
-"""
-    else:
-        return f"""
+OP_PLAN = """\
 Fiverr Automation Plan — Oracle Philosophy
 Date: {date}
+Request: {req}
 
-Objective:
-Full automation: intake → generate → refine → package → deliver → archive.
-
-Pipeline:
-- Prometheus: phrasing, tone
-- Mnemosyne: SEO, structure
-- Hermes: packaging, delivery
-
-Pricing:
-Basic $50 / Standard $150 / Premium $300
-Revenue cycle: Fiverr clearance T+14.
-
-Next:
-- Publish demo gig
-- Log first order
+1) Objective
+- Full automation: intake → generate → refine → package → deliver → archive.
+...
 — End —
 """
 
+BP_PLAN = """\
+{title}
+Date: {date}
 
-# ====== Routes ======
-@app.get("/")
-async def root():
-    return {"message": "Backend Online ✅"}
+1. Executive Summary
+Mission: automate content creation, scheduling, and analytics for SMEs using AI pipelines...
+2. Market Analysis
+TAM/SAM/SOM, competitors, gaps...
+3. Product & Tech
+Modules: intake → generator → refiner → scheduler → analytics; moat & IP...
+4. Business Model
+Tiered subscription + one-off projects; pricing table...
+5. Go-To-Market
+Channels (X/TikTok/communities), content engine, partnerships...
+6. Operations
+Team roles, SLA, tooling, security & compliance...
+7. Financials
+Startup costs, unit economics, 12-month P&L, break-even, cash cycle (Fiverr T+14 / Stripe T+30)...
+8. Roadmap & Milestones
+M0–M6 deliverables, risks & mitigations...
+— End of Business Plan —
+"""
 
+def build_plan(user_prompt: str | None) -> str:
+    req = (user_prompt or "Generate a practical Fiverr automation plan").strip()
+    is_bp = "business plan" in req.lower()
+    date = datetime.utcnow().strftime("%Y-%m-%d")
+    if is_bp:
+        title = "AI Social Media Management — Business Plan"
+        return BP_PLAN.format(title=title, date=date)
+    return OP_PLAN.format(date=date, req=req)
+
+@app.post("/api/plan")
+async def api_plan(body: PlanReq):
+    return {"output": build_plan(body.prompt)}
+
+# 兼容旧路径
 @app.post("/neural/generator")
-async def generator(data: NeuralInput):
-    return {"output": generate_plan(data.prompt)}
+async def generator(body: PlanReq):
+    return {"output": build_plan(body.prompt)}
 
 @app.post("/neural/refiner")
-async def refiner(data: NeuralInput):
-    return {"output": generate_plan(data.prompt)}
+async def refiner(body: PlanReq):
+    return {"output": build_plan(body.prompt)}
 
 @app.post("/neural/verifier")
-async def verifier(data: NeuralInput):
-    return {"output": generate_plan(data.prompt)}
-
-
-# ====== Render Runtime ======
-if __name__ == "__main__":
-    import os, uvicorn
-    port = int(os.environ.get("PORT", 10000))
-    uvicorn.run(app, host="0.0.0.0", port=port)
+async def verifier(body: PlanReq):
+    return {"output": build_plan(body.prompt)}
