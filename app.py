@@ -133,6 +133,41 @@ async def generate_report(request: Request):
     except Exception as e:
         return {"error": str(e)}
 
+@app.post("/neural/businessplan")
+async def generate_business_plan(request: Request):
+    try:
+        data = await request.json()
+        company = data.get("company", "")
+        industry = data.get("industry", "")
+        tone = data.get("tone", "professional")
+        length = data.get("length", "standard")
+        
+        if not company or not industry:
+            return {"error": "company and industry required"}
+        
+        # 调用编排逻辑生成商业计划
+        prompt = f"Create a {length} business plan for {company} in the {industry} industry with {tone} tone"
+        
+        # 这里可以调用现有的三个端点或直接生成内容
+        response = await call_neural_endpoint("/neural/generator", {
+            "prompt": prompt
+        })
+        
+        plan_data = {
+            "title": f"Business Plan: {company}",
+            "company": company,
+            "industry": industry,
+            "tone": tone,
+            "length": length,
+            "content": response.get("output", f"Business plan for {company} in {industry} industry."),
+            "status": "completed"
+        }
+        
+        return plan_data
+        
+    except Exception as e:
+        return {"error": str(e)}
+
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
     uvicorn.run("main:app", host="0.0.0.0", port=port)
