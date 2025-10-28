@@ -1,8 +1,10 @@
 # app.py — fixed plan endpoint (Render-ready)
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from datetime import datetime
+import json
 
 app = FastAPI(title="Fiverr Automation Backend")
 
@@ -87,12 +89,20 @@ async def root():
 # 新的稳定端点（推荐前端调用）
 @app.post("/api/plan")
 async def api_plan(body: PlanReq):
-    return {"output": build_plan(body.prompt)}
+    plan_text = build_plan(body.prompt)
+    return JSONResponse(
+        content={"output": plan_text},
+        media_type="application/json; charset=utf-8"
+    )
 
 # 兼容旧路径，避免 422/空返回
 @app.post("/neural/generator")
 async def generator(body: PlanReq):
-    return {"output": build_plan(body.prompt)}
+    plan_text = build_plan(body.prompt)
+    return JSONResponse(
+        content={"output": plan_text},
+        media_type="application/json; charset=utf-8"
+    )
 
 @app.post("/neural/refiner")
 async def refiner(req: Request):
@@ -100,7 +110,11 @@ async def refiner(req: Request):
         data = await req.json()
     except:
         data = {}
-    return {"output": "Refined.\n\n" + build_plan(data.get("prompt"))}
+    plan_text = "Refined.\n\n" + build_plan(data.get("prompt"))
+    return JSONResponse(
+        content={"output": plan_text},
+        media_type="application/json; charset=utf-8"
+    )
 
 @app.post("/neural/verifier")
 async def verifier(req: Request):
@@ -108,4 +122,12 @@ async def verifier(req: Request):
         data = await req.json()
     except:
         data = {}
-    return {"output": "Verified for delivery.\n\n" + build_plan(data.get("prompt"))}
+    plan_text = "Verified for delivery.\n\n" + build_plan(data.get("prompt"))
+    return JSONResponse(
+        content={"output": plan_text},
+        media_type="application/json; charset=utf-8"
+    )
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)
