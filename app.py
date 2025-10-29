@@ -1,6 +1,7 @@
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+from typing import Optional
 import uvicorn
 
 # ====================================================
@@ -29,6 +30,9 @@ app.add_middleware(
 API_KEY = "brotherkey123"
 
 async def verify_api_key(request: Request):
+    # 跳过 OPTIONS 预检请求
+    if request.method == "OPTIONS":
+        return
     key = request.headers.get("x-api-key")
     if key != API_KEY:
         raise HTTPException(status_code=403, detail="Invalid or missing API key")
@@ -37,7 +41,7 @@ async def verify_api_key(request: Request):
 # REQUEST MODEL
 # ====================================================
 class TaskRequest(BaseModel):
-    prompt: str
+    prompt: Optional[str] = None
 
 # ====================================================
 # ENDPOINTS
@@ -56,17 +60,22 @@ async def options_handler(full_path: str):
 @app.post("/neural/generator")
 async def generate(req: TaskRequest, request: Request):
     await verify_api_key(request)
-    return {"output": f"Generated draft for: {req.prompt}"}
+    if not req.prompt:
+        raise HTTPException(status_code=422, detail="Missing prompt in request")
+    text = f"AI Business Plan Draft for: {req.prompt}\n\n1. Overview\n2. Market Analysis\n3. Strategy\n4. Revenue Model\n5. Timeline"
+    return {"output": text}
 
 @app.post("/neural/refiner")
 async def refine(req: TaskRequest, request: Request):
     await verify_api_key(request)
-    return {"output": f"Refined structure for: {req.prompt}"}
+    text = f"Refined business structure for: {req.prompt or 'undefined task'}"
+    return {"output": text}
 
 @app.post("/neural/verifier")
 async def verify(req: TaskRequest, request: Request):
     await verify_api_key(request)
-    return {"output": f"Verified delivery for: {req.prompt}"}
+    text = f"Verified plan delivery for: {req.prompt or 'undefined task'}"
+    return {"output": text}
 
 # ====================================================
 # LOCAL RUN SUPPORT (optional)
