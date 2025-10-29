@@ -1,15 +1,18 @@
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-import os
+import uvicorn
 
-app = FastAPI()
+# ====================================================
+# FASTAPI INITIALIZATION
+# ====================================================
+app = FastAPI(title="Fiverr Automation Backend", version="1.0.0")
 
-# ===== CORS 修复部分 =====
+# ====================================================
+# CORS FIX – FULL, SAFE, RENDER-COMPATIBLE
+# ====================================================
 origins = [
-    "https://frontend-qes3y9hm4-yumi951357s-projects.vercel.app",
-    "http://localhost:3000",
-    "*"
+    "*",  # 临时允许所有源，Render 环境推荐这样测试；后续再精确限制
 ]
 
 app.add_middleware(
@@ -20,39 +23,53 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# ===== 数据模型修复 =====
+# ====================================================
+# API SECURITY
+# ====================================================
+API_KEY = "brotherkey123"
+
+async def verify_api_key(request: Request):
+    key = request.headers.get("x-api-key")
+    if key != API_KEY:
+        raise HTTPException(status_code=403, detail="Invalid or missing API key")
+
+# ====================================================
+# REQUEST MODEL
+# ====================================================
 class TaskRequest(BaseModel):
     prompt: str
 
-# ===== API Key 验证修复 =====
-API_KEY = "brotherkey123"
+# ====================================================
+# ENDPOINTS
+# ====================================================
+@app.get("/")
+async def root():
+    return {"status": "online", "service": "Fiverr Automation Backend"}
 
-@app.middleware("http")
-async def verify_key(request: Request, call_next):
-    # 跳过 OPTIONS 预检请求
-    if request.method == "OPTIONS":
-        return await call_next(request)
-    
-    # 只验证 /neural/ 路径的 POST 请求
-    if request.url.path.startswith("/neural/") and request.method == "POST":
-        key = request.headers.get("x-api-key")
-        if key != API_KEY:
-            raise HTTPException(status_code=403, detail="Invalid API key")
-    return await call_next(request)
+@app.options("/{full_path:path}")
+async def options_handler(full_path: str):
+    """
+    关键：显式允许 OPTIONS 请求通过（Render 否则阻断预检）
+    """
+    return {}
 
-# ===== 三个端点（统一结构） =====
 @app.post("/neural/generator")
-async def generate(req: TaskRequest):
+async def generate(req: TaskRequest, request: Request):
+    await verify_api_key(request)
     return {"output": f"Generated draft for: {req.prompt}"}
 
 @app.post("/neural/refiner")
-async def refine(req: TaskRequest):
+async def refine(req: TaskRequest, request: Request):
+    await verify_api_key(request)
     return {"output": f"Refined structure for: {req.prompt}"}
 
 @app.post("/neural/verifier")
-async def verify(req: TaskRequest):
+async def verify(req: TaskRequest, request: Request):
+    await verify_api_key(request)
     return {"output": f"Verified delivery for: {req.prompt}"}
 
-@app.get("/")
-def root():
-    return {"status": "online"}
+# ====================================================
+# LOCAL RUN SUPPORT (optional)
+# ====================================================
+if __name__ == "__main__":
+    uvicorn.run("app:app", host="0.0.0.0", port=10000)
