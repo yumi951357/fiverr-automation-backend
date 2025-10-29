@@ -1,25 +1,25 @@
-from fastapi import FastAPI, Request, Header, HTTPException
+from fastapi import FastAPI, Header, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import os
 
 app = FastAPI()
 
-# === 核心配置 ===
-API_KEY = os.getenv("NEURAL_API_KEY", "brotherkey123")
-
-# === CORS 放行前端 ===
-origins = [
-    "https://frontend-qes3y9hm4-yumi951357s-projects.vercel.app",
-    "http://localhost:3000"
-]
-
+# CORS 配置 - 放在所有路由之前
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=[
+        "https://frontend-qes3y9hm4-yumi951357s-projects.vercel.app",
+        "http://localhost:3000",
+        "*"
+    ],
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# === 核心配置 ===
+API_KEY = os.getenv("NEURAL_API_KEY", "brotherkey123")
 
 class TaskRequest(BaseModel):
     prompt: str
