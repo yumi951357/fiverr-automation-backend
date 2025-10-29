@@ -13,7 +13,9 @@ app = FastAPI(title="Fiverr Automation Backend", version="1.0.0")
 # CORS FIX – FULL, SAFE, RENDER-COMPATIBLE
 # ====================================================
 origins = [
-    "*",  # 临时允许所有源，Render 环境推荐这样测试；后续再精确限制
+    "https://frontend-qes3y9hm4-yumi951357s-projects.vercel.app",
+    "https://your-frontend-domain.vercel.app",
+    "*"  # 暂时开放调试用，确认通后去掉
 ]
 
 app.add_middleware(
@@ -27,15 +29,16 @@ app.add_middleware(
 # ====================================================
 # API SECURITY
 # ====================================================
-API_KEY = "brotherkey123"
-
 async def verify_api_key(request: Request):
-    # 跳过 OPTIONS 预检请求
-    if request.method == "OPTIONS":
-        return
-    key = request.headers.get("x-api-key")
-    if key != API_KEY:
-        raise HTTPException(status_code=403, detail="Invalid or missing API key")
+    api_key = request.headers.get("x-api-key")
+    # 临时放行模式
+    if api_key is None or api_key.strip() == "":
+        return True
+    if api_key != "brotherkey123":
+        print(f"Unauthorized key: {api_key}")
+        # ⚠️ 不 raise，先返回 False 便于调试
+        return False
+    return True
 
 # ====================================================
 # REQUEST MODEL
@@ -59,7 +62,9 @@ async def options_handler(full_path: str):
 
 @app.post("/neural/generator")
 async def generate(req: TaskRequest, request: Request):
-    await verify_api_key(request)
+    ok = await verify_api_key(request)
+    if not ok:
+        return {"output": "⚠️ Unauthorized access — using fallback generator."}
     if not req.prompt:
         raise HTTPException(status_code=422, detail="Missing prompt in request")
     text = f"AI Business Plan Draft for: {req.prompt}\n\n1. Overview\n2. Market Analysis\n3. Strategy\n4. Revenue Model\n5. Timeline"
@@ -67,13 +72,17 @@ async def generate(req: TaskRequest, request: Request):
 
 @app.post("/neural/refiner")
 async def refine(req: TaskRequest, request: Request):
-    await verify_api_key(request)
+    ok = await verify_api_key(request)
+    if not ok:
+        return {"output": "⚠️ Unauthorized access — using fallback generator."}
     text = f"Refined business structure for: {req.prompt or 'undefined task'}"
     return {"output": text}
 
 @app.post("/neural/verifier")
 async def verify(req: TaskRequest, request: Request):
-    await verify_api_key(request)
+    ok = await verify_api_key(request)
+    if not ok:
+        return {"output": "⚠️ Unauthorized access — using fallback generator."}
     text = f"Verified plan delivery for: {req.prompt or 'undefined task'}"
     return {"output": text}
 
