@@ -1,3 +1,4 @@
+```python
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -67,6 +68,7 @@ async def generate(req: TaskRequest, request: Request):
         return {"output": "⚠️ Unauthorized access — using fallback generator."}
     if not req.prompt:
         raise HTTPException(status_code=422, detail="Missing prompt in request")
+    print(f"✅ Received prompt from frontend: {req.prompt}")
     text = f"AI Business Plan Draft for: {req.prompt}\n\n1. Overview\n2. Market Analysis\n3. Strategy\n4. Revenue Model\n5. Timeline"
     return {"output": text}
 
@@ -91,3 +93,4 @@ async def verify(req: TaskRequest, request: Request):
 # ====================================================
 if __name__ == "__main__":
     uvicorn.run("app:app", host="0.0.0.0", port=10000)
+```
