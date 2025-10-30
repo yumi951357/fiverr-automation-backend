@@ -1,4 +1,3 @@
-```python
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -93,4 +92,3 @@ async def verify(req: TaskRequest, request: Request):
 # ====================================================
 if __name__ == "__main__":
     uvicorn.run("app:app", host="0.0.0.0", port=10000)
-```
